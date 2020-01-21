@@ -27,6 +27,8 @@ unsigned long CHANNEL_ID = 964989;
 #define MAX_TEMP 100
 #define MIN_TEMP 10
 #define HEAT_BED_TIMEOUT 5 * 60000 /* 5 mins */
+#define PID_THRESHOLD                                                          \
+  10 /* Pid is avtivated when actual reading is target - PID_THRESHOLD */
 
 double Kp = 2;
 double Ki = 5;
@@ -71,8 +73,6 @@ void setup() {
   pinMode(BUTTON_UP, INPUT_PULLUP);
   pinMode(BUTTON_DOWN, INPUT_PULLUP);
   pinMode(BUTTON_START_STOP, INPUT_PULLUP);
-
-  pinMode(HEAT_BED, INPUT);
 }
 
 void get_temp() {
@@ -93,10 +93,16 @@ void handle_temp(temp_t *t) {
     pid.SetMode(MANUAL);
     return;
   }
-  pid.SetTunings(Kp, Ki, Kd);
-  pid.Compute();
-  analogWrite(MOSFET, t->mosfet_out);
-  pid.SetMode(AUTOMATIC);
+
+  if (abs(t->set - t->avg) <= PID_THRESHOLD) {
+    pid.SetTunings(Kp, Ki, Kd);
+    pid.Compute();
+    analogWrite(MOSFET, t->mosfet_out);
+    pid.SetMode(AUTOMATIC);
+  } else {
+    t->mosfet_out = 255;
+    analogWrite(MOSFET, 255);
+  }
 }
 
 void get_eeprom() {
@@ -220,8 +226,8 @@ void update_lcd(temp_t *t) {
   display.setTextSize(1);
 
   display.println("T:" + String(t->top) + "\nB:" + String(t->bottom) +
-                  "\nSet:" + String(t->set) +
-                  "\nPower:" + String(t->mosfet_out));
+                  "\nSet:" + String(t->set) + "\nPower:" +
+                  String(map(t->mosfet_out, 0, 255, 0, 100)) + "%");
 
   display.display();
 }
@@ -255,7 +261,7 @@ void handle_client() {
 }
 
 void loop() {
-  if (digitalRead(HEAT_BED))
+  if (analogRead(HEAT_BED) > 50)
     heat_bed_timer = millis();
 
   if ((millis() - client_callback) > 10000) {
@@ -268,8 +274,10 @@ void loop() {
   }
   handle_buttons();
   update_lcd(&temp);
-  if ((millis() - heat_bed_timer) > HEAT_BED_TIMEOUT)
+  if ((millis() - heat_bed_timer) > HEAT_BED_TIMEOUT) {
     analogWrite(MOSFET, 0);
-  else
+    temp.mosfet_out = 0;
+  } else {
     handle_temp(&temp);
+  }
 }
