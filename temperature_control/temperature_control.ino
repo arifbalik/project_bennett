@@ -22,9 +22,11 @@ unsigned long CHANNEL_ID = 964989;
 #define BUTTON_START_STOP D7
 #define TEMP_SENSORS 3
 #define MOSFET D8
+#define HEAT_BED A0
 
 #define MAX_TEMP 100
 #define MIN_TEMP 10
+#define HEAT_BED_TIMEOUT 5 * 60000 /* 5 mins */
 
 double Kp = 2;
 double Ki = 5;
@@ -44,7 +46,7 @@ void get_eeprom();
 
 int c_millis, p_millis, button_scan_millis, pid_millis, pid_menu_count,
     pid_menu_active, pid_val, pick_param, is_attached, client_callback,
-    temp_callback;
+    temp_callback, heat_bed_timer;
 temp_t temp;
 OneWire oneWire(TEMP_SENSORS);
 DallasTemperature sensors(&oneWire);
@@ -69,6 +71,8 @@ void setup() {
   pinMode(BUTTON_UP, INPUT_PULLUP);
   pinMode(BUTTON_DOWN, INPUT_PULLUP);
   pinMode(BUTTON_START_STOP, INPUT_PULLUP);
+
+  pinMode(HEAT_BED, INPUT);
 }
 
 void get_temp() {
@@ -251,6 +255,9 @@ void handle_client() {
 }
 
 void loop() {
+  if (digitalRead(HEAT_BED))
+    heat_bed_timer = millis();
+
   if ((millis() - client_callback) > 10000) {
     client_callback = millis();
     handle_client();
@@ -261,5 +268,8 @@ void loop() {
   }
   handle_buttons();
   update_lcd(&temp);
-  handle_temp(&temp);
+  if ((millis() - heat_bed_timer) > HEAT_BED_TIMEOUT)
+    analogWrite(MOSFET, 0);
+  else
+    handle_temp(&temp);
 }
