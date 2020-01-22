@@ -189,7 +189,10 @@ void handle_buttons() {
 
   button_scan_millis = millis();
 }
-
+void kill(){
+  analogWrite(MOSFET, 0);
+  while(1);
+}
 void pid_menu() {
 
   display.clearDisplay();
@@ -213,10 +216,11 @@ void update_lcd(temp_t *t) {
   display.clearDisplay();
   display.setCursor(0, 0);
 
-  if (t->avg < 0) {
+  if (t->avg < 0 || t->avg > (MAX_TEMP + 10)) {
     display.setTextSize(2);
     display.println("\n ERROR!");
     display.display();
+    kill();
     return;
   }
 
