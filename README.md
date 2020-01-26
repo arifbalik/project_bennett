@@ -28,6 +28,11 @@ Activation is done manually prior to start of print, using the menu buttons.
 - max_temp
 - sensor timeout
 
-# Prototype
+# Hardware Components
+- NodeMCU
+- Nokia 5110 LCD display
+- n-channel mosfet
+- DS180B20 temperature sensor
 
+# Prototype
 insert picture of prototype
