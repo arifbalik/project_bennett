@@ -35,4 +35,5 @@ Activation is done manually prior to start of print, using the menu buttons.
 - DS180B20 temperature sensor
 
 # Prototype
-insert picture of prototype
+![Sch](img/sch.png)
+![Sch](img/imp.jpg)
