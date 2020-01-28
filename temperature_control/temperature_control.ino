@@ -231,7 +231,7 @@ void update_lcd(temp_t *t) {
 
   display.println("T:" + String(t->top) + "\nB:" + String(t->bottom) +
                   "\nSet:" + String(t->set) + "\nPower:" +
-                  String(map(t->mosfet_out, 0, 255, 0, 100)) + "% Mode:"+ (t->state == 0) ? "OFF" : "ON" );
+                  String(map(t->mosfet_out, 0, 255, 0, 100)) + "% "+ (t->state == 0) ? "OFF" : "ON" );
 
   display.display();
 }
